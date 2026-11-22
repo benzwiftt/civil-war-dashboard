@@ -57,6 +57,16 @@
       await chrome.storage.local.set({ settings: Object.assign({}, d.settings, patch) });
     },
 
+    // light read for the side panel: category names, when this product was last saved, and personal settings
+    hints: async function (key) {
+      var d = await local.load(), cats = [], last = '';
+      d.snapshots.forEach(function (s) {
+        if (s.category) { var i = cats.indexOf(s.category); if (i >= 0) cats.splice(i, 1); cats.push(s.category); }
+        if (key && root.PDP.recordKey(s) === key && s.capturedAt && s.capturedAt > last) last = s.capturedAt;
+      });
+      return { categories: cats, lastCapturedAt: last, settings: d.settings };
+    },
+
     getSets: async function () {
       var g = await chrome.storage.local.get({ compareSets: [] });
       return Array.isArray(g.compareSets) ? g.compareSets : [];
@@ -150,14 +160,38 @@
     } catch (e) { /* the banner already told the person */ }
   }
 
+  // Banner pictures copied into Supabase Storage: the record keeps the original Shopee addresses (so nothing else changes)
+  // plus imageCopy = { pictureId: 1 }. Pages get the copy's address instead, in memory only.
+  var PIC_BASE = function () { return cfg().supabaseUrl + '/storage/v1/object/public/banners/file/'; };
+  function picUrl(id) { return PIC_BASE() + encodeURIComponent(id); }
+  function withCopies(s) {
+    var c = s && s.imageCopy;
+    if (!c) return s;
+    function m(u) { var id = root.PDP.imgKey(u); return c[id] ? picUrl(id) : u; }
+    s.images = (s.images || []).map(m); s.descImages = (s.descImages || []).map(m);
+    return s;
+  }
+  function isoOf(x) { var d = new Date(x); return isNaN(d.getTime()) ? String(x || '') : d.toISOString(); }
+
   var cloud = {
     name: 'cloud',
 
     load: async function () {
       var r = await Promise.all([fetchAll('snapshots', 'data', 'captured_at.asc,id.asc'), fetchAll('notes', 'product_key,text', ''), getLocalSettings()]);
       var notes = {}; r[1].forEach(function (x) { if (x.text) notes[x.product_key] = x.text; });
-      return { snapshots: r[0].map(function (x) { return x.data; }), notes: notes, settings: r[2] };
+      return { snapshots: r[0].map(function (x) { return withCopies(x.data); }), notes: notes, settings: r[2] };
     },
+
+    // light read for the side panel: category names, when this product was last saved, and personal settings
+    hints: async function (key) {
+      var jobs = [fetchAll('snapshots', 'category:data->>category', 'captured_at.asc,id.asc'), getLocalSettings()];
+      if (key) jobs.push(sb('GET', 'snapshots?select=captured_at&product_key=eq.' + enc(key) + '&order=captured_at.desc,id.desc&limit=1'));
+      var r = await Promise.all(jobs), cats = [];
+      r[0].forEach(function (x) { var c = x.category; if (c) { var i = cats.indexOf(c); if (i >= 0) cats.splice(i, 1); cats.push(c); } });
+      return { categories: cats, lastCapturedAt: r[2] && r[2][0] ? isoOf(r[2][0].captured_at) : '', settings: r[1] };
+    },
+
+    pictureUrl: picUrl,
 
     addSnapshot: async function (rec, settingsPatch) {
       await sb('POST', 'snapshots', { body: { product_key: root.PDP.recordKey(rec), captured_at: rec.capturedAt, data: rec }, prefer: 'return=minimal' });
