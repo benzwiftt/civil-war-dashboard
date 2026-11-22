@@ -406,3 +406,135 @@ table.cm tr.sec td.claim{background:#FAF5F8}
 .acc span:last-child{color:var(--accent);font-size:12px}
 .upd{display:flex;flex-direction:column;gap:12px;padding:0 0 16px}
 .foot{color:var(--muted);font-size:12px;display:flex;flex-direction:column;gap:3px;padding-bottom:8px}
+
+/* ---- 0.17.0: new look (approved design preview, 22 Nov 2026) ----
+   Plum band behind the menu and the page title, lavender page background with soft dots, rounder white cards,
+   numbered section badges, muted pastel category cards. The band height (--hero-h) is set by common.js from the title block. */
+:root{--hero:#5E1D3F;--hero-ink:#F3E6EE;--cta:#FFD9A8;--cta-ink:#4A2600;--page:#E6DDF3;--rule:#DDD2DB;--shadow:0 2px 6px rgba(60,26,82,.05),0 10px 28px rgba(60,26,82,.10)}
+body{position:relative;min-height:100vh;background-color:var(--page);background-image:radial-gradient(rgba(94,29,63,.13) 1px,transparent 1.2px),linear-gradient(165deg,#F1DDEA 0%,#E4DAF6 45%,#D9E3F7 100%);background-size:22px 22px,100% 100%}
+body:before{content:"";position:absolute;left:0;right:0;top:0;height:var(--hero-h,160px);z-index:-1;background-color:var(--hero);background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1.2px),linear-gradient(135deg,#6E2350 0%,#4E1A48 60%,#3C1A52 100%);background-size:18px 18px,100% 100%}
+
+/* menu on the band: the open page is a white pill */
+nav.top{background:transparent;border-bottom:0}
+nav.top .in{min-height:52px}
+nav.top .brand{color:#fff}
+nav.top .brand i{background:#F6E3EC}
+nav.top a{color:var(--hero-ink);padding:6px 12px;border-bottom:0;border-radius:999px}
+nav.top a:hover{color:#fff;background:rgba(255,255,255,.1)}
+nav.top a[aria-current=page]{color:var(--accent-dark);background:#fff;border-bottom:0}
+nav.top :focus-visible,.onhero :focus-visible{outline-color:#fff}
+
+/* title block on the band */
+.wrap{padding-top:18px}
+.onhero{color:#fff}
+.onhero h1{color:#fff;font-size:24px}
+.onhero h2{color:#fff}
+.onhero .sub,.onhero .small,.onhero .eyebrow,.onhero .lbl{color:var(--hero-ink)}
+.onhero a:not(.btn){color:#fff}
+.onhero .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.35);color:#fff;border-radius:999px;height:32px}
+.onhero .btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.6)}
+.onhero .btn.primary{background:var(--cta);border-color:var(--cta);color:var(--cta-ink);font-weight:800}
+.onhero .btn.primary:hover{background:#FFE6C4;border-color:#FFE6C4;color:var(--cta-ink)}
+.onhero .btn:disabled{opacity:.55}
+.onhero .btn.danger{color:#FFD0D0}
+.onhero .btn.danger.armed{background:#A12A2A;border-color:#A12A2A;color:#fff}
+.onhero .seg{background:rgba(255,255,255,.14);border-radius:999px;padding:3px}
+.onhero .seg a,.onhero .seg button{color:#fff;border-radius:999px}
+.onhero .seg b{opacity:.75}
+.onhero .seg [aria-current=page],.onhero .seg [aria-pressed=true]{background:#fff;color:var(--accent-dark)}
+.onhero .seg [aria-current=page] b,.onhero .seg [aria-pressed=true] b{opacity:.65}
+.onhero .input,.onhero .select{border-color:transparent;background:#fff;color:var(--ink)}
+.onhero .tsep{width:1px;height:22px;background:rgba(255,255,255,.3)}
+/* pop-ups opened from the band stay white */
+.onhero .pop,.onhero .pickpop,.onhero .menu{color:var(--ink)}
+.onhero .pop .small,.onhero .pickpop .small,.onhero .pop .eyebrow,.onhero .pickpop .eyebrow{color:var(--muted)}
+.onhero .pop .input,.onhero .pickpop .input,.onhero .menu .input{border-color:#E4DDE1}
+.onhero .pop .btn,.onhero .pickpop .btn,.onhero .menu .btn{background:#fff;border-color:#E4DDE1;color:var(--ink);height:28px}
+.onhero .pop .btn.primary,.onhero .pickpop .btn.primary,.onhero .menu .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.onhero .pop a:not(.btn),.onhero .pickpop a:not(.btn),.onhero .menu a:not(.btn){color:var(--accent)}
+a.back.onhero{color:#fff}
+a.back.onhero:hover{background:rgba(255,255,255,.12)}
+
+/* cards: rounder, softer shadow */
+.card,.emptybox{border-radius:22px;box-shadow:var(--shadow)}
+.emptybox{background:#fff}
+.sec.tint{background:#fff;box-shadow:var(--shadow)}
+.panel{padding:16px 20px}
+#app>.msg{color:var(--ink2);border-top-color:rgba(94,29,63,.15)}
+.foot{color:var(--ink2)}
+.btn.dashed{height:34px;border-radius:999px;border:1.5px dashed #B9A6C9;background:transparent;color:#5B3BB0;font-weight:700}
+.btn.dashed:hover{border-color:#8A63E6;background:#F7F3FD}
+
+/* numbered badges on section titles (Main page, Product detail, Compare) */
+#app{counter-reset:secno}
+.panel>.ph>h2,.sec>.hd>h3,.gal h2{display:inline-flex;align-items:center;gap:10px}
+.panel>.ph>h2:before,.sec>.hd>h3:before,.gal h2:before{counter-increment:secno;content:counter(secno,decimal-leading-zero);flex:0 0 30px;height:30px;border-radius:10px;color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#B8457E,#8A2E5C);box-shadow:0 3px 0 rgba(60,26,82,.15)}
+.panel:nth-of-type(4n+2)>.ph>h2:before,.gal h2:before,.cols>div>.sec:nth-child(4n+2)>.hd>h3:before{background:linear-gradient(135deg,#F0A23B,#D9762A)}
+.panel:nth-of-type(4n+3)>.ph>h2:before,.cols>div>.sec:nth-child(4n+3)>.hd>h3:before{background:linear-gradient(135deg,#8A63E6,#5B3BB0)}
+.panel:nth-of-type(4n)>.ph>h2:before,.cols>div>.sec:nth-child(4n)>.hd>h3:before{background:linear-gradient(135deg,#4F8FD0,#2B5A9A)}
+.pickcard>.ph>h2:before{background:linear-gradient(135deg,#F0A23B,#D9762A)!important}
+.panel>.ph{align-items:center}
+
+/* Main page: four separate number cards */
+section.card.kpis{background:transparent;box-shadow:none;border-radius:0;gap:12px}
+.kpis .k{background:#fff;border-radius:20px;box-shadow:var(--shadow);border-left:0;padding:14px 18px;flex-direction:column;align-items:flex-start;gap:2px}
+.kpis .n{font-size:22px}
+.kpis .k:nth-child(1) .eyebrow{color:#8A2E5C}
+.kpis .k:nth-child(2) .eyebrow{color:#5B3BB0}
+.kpis .k:nth-child(3) .eyebrow{color:#2B5A9A}
+.kpis .k:nth-child(4) .eyebrow{color:#7A4B00}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* muted pastel category cards */
+.cat{border:0;border-radius:14px;background:#EEDFE5}
+.cat:nth-child(5n+2){background:#E6E1EF}
+.cat:nth-child(5n+3){background:#F0E5DA}
+.cat:nth-child(5n+4){background:#DFE8E2}
+.cat:nth-child(5n+5){background:#DEE5EE}
+.cat:hover{box-shadow:0 0 0 2px var(--field)}
+.cat .cc{color:var(--ink2)}
+.rcard{border:0;border-radius:16px;background:#FBF6FD}
+.rcard:hover{box-shadow:0 0 0 2px var(--field)}
+
+/* Product library: one white card; search, sort and group by inside; thin lines between products */
+.libcard{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.libtools{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.libtools .input{flex:1 1 300px;max-width:420px;height:34px;border-radius:999px;border-color:transparent;background:#F1ECFB;padding:0 14px}
+.libtools .select{height:34px;border-radius:999px;border-color:transparent;background:#F1ECFB;padding:0 12px}
+.libtools .eyebrow{margin-left:6px}
+.libtools .cnt{margin-left:auto}
+.libcard .pills .pill{min-height:26px}
+.libcard .list{background:none;box-shadow:none;padding:0;border-radius:0;gap:0;border-top:1px solid var(--rule)}
+.libcard .lline{border-bottom:1px solid var(--rule)}
+.libcard .lrow,.libcard .list>.lrow{box-shadow:none;border-radius:0;background:transparent}
+.libcard .lrow:hover{box-shadow:none;background:#FBF7FA}
+.libcard .lline.on .lrow{background:#FBF1F6}
+.lgroup{display:flex;align-items:center;gap:8px;margin-top:6px}
+.lgroup h3{font-size:13px}
+.lgroup .cnt{height:18px;padding:0 8px;border-radius:999px;background:#F1ECFB;color:#5B3BB0;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center}
+.lgroup:after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* Product detail: header on the band, facts as white cards */
+.dhead{padding:4px 0 0;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.dhead .cov{width:96px;height:96px;flex:0 0 96px;border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.dhead.onhero h1{font-size:24px;margin:2px 0 0}
+.dhead.onhero .newbadge{background:var(--cta);color:var(--cta-ink)}
+.dhead .dacts{align-self:center;margin-left:auto}
+.factcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.factcards>div{background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:12px 16px;min-width:0}
+.factcards .k{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.factcards b{font-size:15px;display:block;overflow-wrap:anywhere}.factcards b.s{font-size:12.5px}
+details.raw{border-radius:22px}
+
+/* Compare: tools under the band, Chosen products card for the Claim matrix */
+.pdptools{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:flex-end}
+.pdptools{margin-top:-6px}
+.pdptools.onhero .seg{background:rgba(255,255,255,.14)}
+.pickrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pickrow .pickend{margin-left:auto;display:flex;gap:8px}
+.pickrow .chipx{height:34px;border-radius:999px;padding:0 6px 0 12px}
+
+/* Settings: title and extension status on the band; the download button is the main action */
+.statusbar.onhero{background:transparent;box-shadow:none;padding:0}
+.statusbar.onhero .muted1{color:var(--hero-ink)}
+.btn.primary.big{height:42px;padding:0 20px;font-size:13.5px;border-radius:999px;background:linear-gradient(135deg,#8A2E5C,#6B3FC4);border:0;box-shadow:0 6px 16px rgba(107,63,196,.28)}
+.btn.primary.big:hover{background:linear-gradient(135deg,#5E1D3F,#5B3BB0)}

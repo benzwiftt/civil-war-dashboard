@@ -82,6 +82,42 @@
     el.appendChild(h('div', { class: 'in' },
       h('div', { class: 'brand' }, h('i'), 'Civil War'),
       h('div', { class: 'links' }, items.map(function (it) { return h('a', { href: it[0], 'aria-current': it[2] === active ? 'page' : null }, it[1]); }))));
+    D.watchHero();
+  };
+
+  // 0.17.0 look: the plum band behind the menu reaches down to the page's title block.
+  // The title block is the first .bar and the row right under it (tabs), or the "Back" link, or the page header.
+  // Only colours change; nothing moves. --hero-h is the band height in px.
+  D.fitHero = function () {
+    var app = document.getElementById('app'); if (!app) return;
+    var first = app.firstElementChild, marks = [];
+    if (first && first.classList.contains('bar')) {
+      marks.push(first);
+      var nx = first.nextElementSibling;
+      if (nx && nx.classList.contains('row2')) {
+        marks.push(nx);                                                   // the tabs right under the title
+        var n3 = nx.nextElementSibling;                                   // Compare PDP: Filter slides / Slide size
+        if (n3 && n3.classList.contains('pdptools')) marks.push(n3);
+      }
+    } else if (first && first.classList.contains('back')) {
+      marks.push(first);                                                  // Product detail: Back link + product header
+      if (first.nextElementSibling && first.nextElementSibling.classList.contains('dhead')) marks.push(first.nextElementSibling);
+    } else if (first && first.tagName === 'HEADER') {
+      marks.push(first);                                                  // Settings: title + extension status
+      if (first.nextElementSibling && first.nextElementSibling.classList.contains('statusbar')) marks.push(first.nextElementSibling);
+    }
+    Array.prototype.forEach.call(app.querySelectorAll(':scope > .onhero'), function (el) { if (marks.indexOf(el) < 0) el.classList.remove('onhero'); });
+    marks.forEach(function (el) { el.classList.add('onhero'); });
+    var end = marks[marks.length - 1] || document.getElementById('nav');
+    var bottom = end ? end.getBoundingClientRect().bottom + window.scrollY : 120;
+    document.body.style.setProperty('--hero-h', Math.round(bottom + 34) + 'px');
+  };
+  D.watchHero = function () {
+    var app = document.getElementById('app'), queued = false;
+    function later() { if (queued) return; queued = true; requestAnimationFrame(function () { queued = false; D.fitHero(); }); }
+    if (app && window.MutationObserver) new MutationObserver(later).observe(app, { childList: true, subtree: true });
+    window.addEventListener('resize', later);
+    later();
   };
 
   D.pluralize = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };

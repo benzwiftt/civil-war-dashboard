@@ -3,7 +3,8 @@
   var h = Dash.h;
   Dash.nav('library');
 
-  var state = { main: Dash.getMain(), cat: 'All', q: '', sort: 'latest' };
+  var GROUP_KEY = 'cw_lib_group';
+  var state = { main: Dash.getMain(), cat: 'All', q: '', sort: 'latest', group: (function () { try { return sessionStorage.getItem(GROUP_KEY) || 'none'; } catch (e) { return 'none'; } })() };
   var m = location.hash.match(/cat=([^&]+)/);
   if (m) { try { state.cat = decodeURIComponent(m[1]); } catch (e) { /* ignore */ } }
   var mq = location.hash.match(/q=([^&]+)/);
@@ -19,6 +20,11 @@
     if (at >= 0) picked.splice(at, 1); else if (picked.length < MAX_CMP) picked.push(key);
     saveSel(); draw();
   }
+  function goCompare() {
+    if (picked.length < 2) return;
+    try { sessionStorage.setItem('cw_compare_sel', JSON.stringify(picked)); } catch (e) { /* ignore */ }
+    location.href = 'compare.html';
+  }
   // floating bar at the bottom of the screen; lives outside #app so a redraw of the list does not flicker it
   function drawBar() {
     var old = document.getElementById('selbar'); if (old) old.remove();
@@ -26,10 +32,7 @@
     var n = picked.length, ok = n >= 2;
     document.body.appendChild(h('div', { class: 'selbar', id: 'selbar', role: 'region', 'aria-label': 'Selected products' },
       h('span', null, h('b', null, String(n)), n === 1 ? ' product selected' : ' products selected', ' · ', n >= MAX_CMP ? h('span', { class: 'hint' }, 'maximum ' + MAX_CMP) : (ok ? h('span', { class: 'hint' }, 'max ' + MAX_CMP) : h('span', { class: 'hint' }, 'tick at least 1 more'))),
-      h('button', { type: 'button', class: 'go', disabled: ok ? null : true, onclick: function () {
-        try { sessionStorage.setItem('cw_compare_sel', JSON.stringify(picked)); } catch (e) { /* ignore */ }
-        location.href = 'compare.html';
-      } }, 'Compare now →'),
+      h('button', { type: 'button', class: 'go', disabled: ok ? null : true, onclick: goCompare }, 'Compare now →'),
       h('button', { type: 'button', class: 'clr', onclick: function () { picked = []; saveSel(); draw(); } }, 'Clear')));
   }
 
@@ -58,9 +61,32 @@
 
   function sorted(list) {
     var l = list.slice();
-    if (state.sort === 'price') l.sort(function (a, b) { return (a.latest.price || Infinity) - (b.latest.price || Infinity); });
+    function nm(p) { return (p.latest.title || '').toLowerCase(); }
+    function br(p) { return (p.latest.brand || '\uffff').toLowerCase(); }
+    if (state.sort === 'name') l.sort(function (a, b) { return nm(a) < nm(b) ? -1 : nm(a) > nm(b) ? 1 : 0; });
+    else if (state.sort === 'brand') l.sort(function (a, b) { return br(a) < br(b) ? -1 : br(a) > br(b) ? 1 : (nm(a) < nm(b) ? -1 : nm(a) > nm(b) ? 1 : 0); });
+    else if (state.sort === 'price') l.sort(function (a, b) { return (a.latest.price || Infinity) - (b.latest.price || Infinity); });
     else if (state.sort === 'ppu') l.sort(function (a, b) { var x = Dash.price(a.latest).perUnit, y = Dash.price(b.latest).perUnit; return (x === null ? Infinity : x) - (y === null ? Infinity : y); });
     return l;
+  }
+
+  // Group by (like grouping files in a folder view): brand, sub-category or price range. Groups keep the chosen sort inside.
+  var PRICE_BANDS = [[50000, 'Under Rp 50.000'], [100000, 'Rp 50.000 – 100.000'], [200000, 'Rp 100.000 – 200.000'], [Infinity, 'Above Rp 200.000']];
+  function groupOf(p) {
+    if (state.group === 'brand') return { k: (p.latest.brand || '').toLowerCase() || '\uffff', label: p.latest.brand || 'Brand not found' };
+    if (state.group === 'cat') return { k: (p.category || '').toLowerCase(), label: p.category || 'Uncategorised' };
+    if (state.group === 'price') {
+      var v = p.latest.price;
+      if (!v) return { k: '9', label: 'Price not found' };
+      for (var i = 0; i < PRICE_BANDS.length; i++) if (v < PRICE_BANDS[i][0] || (i === 1 && v === 100000)) return { k: String(i), label: PRICE_BANDS[i][1] };
+    }
+    return { k: '', label: '' };
+  }
+  function grouped(list) {
+    if (state.group === 'none') return [{ label: '', items: list }];
+    var map = {}, keys = [];
+    list.forEach(function (p) { var g = groupOf(p); if (!map[g.k]) { map[g.k] = { label: g.label, items: [] }; keys.push(g.k); } map[g.k].items.push(p); });
+    return keys.sort().map(function (k) { return map[k]; });
   }
 
   function rowFor(p, hit) {
@@ -97,15 +123,18 @@
     var byKey = {}; shown.forEach(function (s) { byKey[s.p.key] = s.hit; });
     var ordered = sorted(shown.map(function (s) { return s.p; }));
 
-    var search = h('input', { class: 'input', id: 'q', type: 'search', placeholder: 'Search brand, product, claim or ingredient', 'aria-label': 'Search brand, product, claim or ingredient', value: state.q, style: 'width:340px' });
+    var search = h('input', { class: 'input', id: 'q', type: 'search', placeholder: 'Search brand, product, claim or ingredient', 'aria-label': 'Search brand, product, claim or ingredient', value: state.q });
     search.addEventListener('input', function () { state.q = search.value; draw(); });
-    var sort = h('select', { class: 'select', 'aria-label': 'Sort products', onchange: function (e) { state.sort = e.target.value; draw(); } },
-      [['latest', 'Latest saved'], ['price', 'Price, low to high'], ['ppu', 'Price per ml/g, low to high']].map(function (o) { return h('option', { value: o[0], selected: state.sort === o[0] ? true : null }, o[1]); }));
+    var sort = h('select', { class: 'select', id: 'lib-sort', onchange: function (e) { state.sort = e.target.value; draw(); } },
+      [['latest', 'Latest saved'], ['name', 'Product name A–Z'], ['brand', 'Brand A–Z'], ['price', 'Price, low to high'], ['ppu', 'Price per ml/g, low to high']].map(function (o) { return h('option', { value: o[0], selected: state.sort === o[0] ? true : null }, o[1]); }));
+    var group = h('select', { class: 'select', id: 'lib-group', onchange: function (e) { state.group = e.target.value; try { sessionStorage.setItem(GROUP_KEY, state.group); } catch (x) { /* ignore */ } draw(); } },
+      [['none', 'None'], ['brand', 'Brand'], ['cat', 'Sub-category'], ['price', 'Price range']].map(function (o) { return h('option', { value: o[0], selected: state.group === o[0] ? true : null }, o[1]); }));
 
     app.appendChild(h('div', { class: 'bar' },
-      h('div', null, h('h1', null, 'Product library'), h('div', { class: 'sub' }, Dash.pluralize(ordered.length, 'product', 'products') + ' · saved on this computer. Click a row to open the product.')),
-      h('div', { class: 'tools' }, search, sort,
-        h('button', { type: 'button', class: 'btn', onclick: function () { exportCsv(ordered); } }, 'Download as Excel (CSV)'))));
+      h('div', null, h('h1', null, 'Product library'), h('div', { class: 'sub' }, 'Every product the team saved from Shopee. Search, filter, then open or compare.')),
+      h('div', { class: 'tools' },
+        h('button', { type: 'button', class: 'btn', onclick: function () { exportCsv(ordered); } }, 'Download as Excel (CSV)'),
+        h('button', { type: 'button', class: 'btn primary', disabled: picked.length >= 2 ? null : true, title: picked.length >= 2 ? '' : 'Tick 2 or more products first', onclick: goCompare }, 'Compare selected →'))));
 
     var inMain = products.filter(function (p) { return Dash.inMain(p, state.main); });
     var cats = Dash.categories(inMain);
@@ -114,16 +143,26 @@
     if (newCount) pillData.push({ name: 'New Launch', label: 'New Launch (' + newCount + ')' });
     cats.forEach(function (c) { pillData.push({ name: c.name, label: c.name + ' (' + c.count + ')' }); });
     app.appendChild(h('div', { class: 'row2' }, Dash.mainTabs(products, state.main, function (t) { state.main = t; Dash.setMain(t); state.cat = 'All'; draw(); })));
-    app.appendChild(h('div', { class: 'pills', role: 'group', 'aria-label': 'Filter by category' }, pillData.map(function (c) {
-      return h('button', { type: 'button', class: 'pill', 'aria-pressed': String(state.cat === c.name), onclick: function () { state.cat = c.name; draw(); } }, c.label);
-    })));
 
-    if (!products.length) app.appendChild(Dash.emptyState());
-    else if (!ordered.length) app.appendChild(h('div', { class: 'card empty' }, h('div', { class: 't' }, 'No products match'), h('div', { class: 'd' }, 'Try another category or clear the search.')));
-    else app.appendChild(h('div', { class: 'list' }, ordered.map(function (p) { return rowFor(p, byKey[p.key]); })));
+    if (!products.length) { app.appendChild(Dash.emptyState()); drawBar(); return; }
+    var card = h('section', { class: 'card libcard' },
+      h('div', { class: 'small' }, 'Tick 2 or more products to compare them.'),
+      h('div', { class: 'libtools' }, search,
+        h('label', { class: 'eyebrow', for: 'lib-sort' }, 'Sort'), sort,
+        h('label', { class: 'eyebrow', for: 'lib-group' }, 'Group by'), group,
+        h('span', { class: 'small cnt' }, 'Showing ' + Dash.pluralize(ordered.length, 'product', 'products'))),
+      h('div', { class: 'pills', role: 'group', 'aria-label': 'Filter by category' }, pillData.map(function (c) {
+        return h('button', { type: 'button', class: 'pill', 'aria-pressed': String(state.cat === c.name), onclick: function () { state.cat = c.name; draw(); } }, c.label);
+      })));
+    if (!ordered.length) card.appendChild(h('div', { class: 'empty' }, h('div', { class: 't' }, 'No products match'), h('div', { class: 'd' }, 'Try another category or clear the search.')));
+    else grouped(ordered).forEach(function (g) {
+      if (g.label) card.appendChild(h('div', { class: 'lgroup' }, h('h3', null, g.label), h('span', { class: 'cnt' }, String(g.items.length))));
+      card.appendChild(h('div', { class: 'list' }, g.items.map(function (p) { return rowFor(p, byKey[p.key]); })));
+    });
+    app.appendChild(card);
 
     if (picked.length) app.appendChild(h('div', { style: 'height:56px', 'aria-hidden': 'true' }));
-    app.appendChild(h('div', { class: 'msg' }, 'The NEW LAUNCH badge shows for 28 days after you tick "Mark as New Product Launch" in the side panel, then it disappears by itself. To compare products, open Compare product from the menu.'));
+    app.appendChild(h('div', { class: 'msg' }, 'The NEW LAUNCH badge shows for 28 days after you tick "Mark as New Product Launch" in the side panel, then it disappears by itself. To compare products, tick them and click Compare selected.'));
 
     drawBar();
     if (typing) { var q = document.getElementById('q'); q.focus(); try { q.setSelectionRange(caret, caret); } catch (e) { /* ignore */ } }

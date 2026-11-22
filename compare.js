@@ -27,9 +27,9 @@
   // ---------- "+ Add product": a checklist that stays open while you tick products ----------
   // Type to search, tick products one by one, or "Select all matching" to fill the free places (up to MAX). Done closes it.
   // The button itself stays exactly where it was in the top bar; only this pop-up changed.
-  function addWidget() {
+  function addWidget(cls) {
     var wrap = h('div', { class: 'pickwrap' });
-    wrap.appendChild(h('button', { type: 'button', class: 'btn primary', 'aria-expanded': String(state.pick), onclick: function () { state.pick = !state.pick; state.setMenu = ''; if (state.pick) { state.pickQ = ''; state.pickNote = ''; state.pickScroll = 0; } draw(); } }, '+ Add product'));
+    wrap.appendChild(h('button', { type: 'button', class: cls || 'btn primary', 'aria-expanded': String(state.pick), onclick: function () { state.pick = !state.pick; state.setMenu = ''; if (state.pick) { state.pickQ = ''; state.pickNote = ''; state.pickScroll = 0; } draw(); } }, '+ Add product'));
     if (!state.pick) return wrap;
     var search = h('input', { class: 'input', type: 'search', placeholder: 'Search brand or product name', 'aria-label': 'Search saved products', style: 'width:100%;margin:2px 0 2px' });
     search.value = state.pickQ || '';
@@ -553,7 +553,7 @@
     var inp = cmInput(), cm = state.cm, box = h('div', { style: 'display:flex;flex-direction:column;gap:8px' });
     if (list.length < 2) {
       box.appendChild(h('section', { class: 'emptybox' }, h('div', { class: 't' }, list.length ? 'Add one more product' : 'Nothing to compare yet'),
-        h('div', { class: 'd' }, 'The claim matrix needs 2 to ' + MAX + ' products. It reads their hero claims, RTB and single key message.'), list.length ? null : addWidget()));
+        h('div', { class: 'd' }, 'The claim matrix needs 2 to ' + MAX + ' products. It reads their hero claims, RTB and single key message.'), null));
       return box;
     }
     if (inp.without.length) box.appendChild(h('div', { class: 'status' }, h('span', { class: 'badge warn' }, 'Not read yet'),
@@ -561,7 +561,6 @@
     if (inp.withAi.length < 2) { box.appendChild(h('section', { class: 'emptybox' }, h('div', { class: 't' }, 'Not enough claims to compare'), h('div', { class: 'd' }, 'At least 2 of the chosen products need an AI reading.'))); return box; }
     ensureMatrix(inp);
     var formula = state.mode === 'formula';
-    if (!formula && cm.status !== 'done') box.appendChild(h('div', { class: 'card mxbar solo' }, h('div', { class: 'l' }, modeSeg())));
     if (!formula && cm.status === 'idle') {
       box.appendChild(h('section', { class: 'card', style: 'padding:20px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center' },
         h('div', { style: 'font-size:15px;font-weight:700' }, 'Ready to build the claim matrix'),
@@ -620,20 +619,16 @@
     var list = chosen();
     var claim = state.view === 'claim';
 
+    // 0.17.0 layout: title, buttons and tabs sit on the plum band; Add product / Save set / Saved sets are at the top (Claim matrix: in the Chosen products card)
     var tools = [];
-    if (list.length && !claim) {
-      if (state.view === 'pdp') {
-        tools.push(h('label', { class: 'zoomrow' }, h('span', { class: 'eyebrow' }, 'Filter slides'),
-          h('select', { class: 'select', 'aria-label': 'Filter slides', onchange: function (e) { state.slideFilter = e.target.value; state.det.err = ''; draw(); } },
-            SLIDE_FILTERS.map(function (f) { return h('option', { value: f[0], selected: state.slideFilter === f[0] ? true : null }, f[1]); }))));
-        tools.push(h('div', { class: 'zoomrow' }, h('span', { class: 'eyebrow' }, 'Slide size'),
-          h('div', { class: 'seg sm', role: 'group', 'aria-label': 'Slide size' }, ['S', 'M', 'L'].map(function (z) {
-            return h('button', { type: 'button', 'aria-pressed': String(state.zoom === z), onclick: function () { state.zoom = z; draw(); } }, z);
-          }))));
+    if (!claim && products.length) {
+      tools.push(addWidget(), setsWidgets(list));
+      if (list.length) {
+        tools.push(h('span', { class: 'tsep', 'aria-hidden': 'true' }));
+        tools.push(h('button', { type: 'button', class: 'btn', onclick: copyTable }, 'Copy table'));
+        tools.push(h('button', { type: 'button', class: 'btn', onclick: exportXlsx }, 'Download Excel'));
+        if (state.view === 'pdp') tools.push(h('button', { type: 'button', class: 'btn', onclick: function (e) { exportHd(e.currentTarget); } }, 'Export HD Image'));
       }
-      if (state.view === 'pdp') tools.push(h('button', { type: 'button', class: 'btn primary', onclick: function (e) { exportHd(e.currentTarget); } }, 'Export HD Image'));
-      tools.push(h('button', { type: 'button', class: 'btn', onclick: copyTable }, 'Copy table'));
-      tools.push(h('button', { type: 'button', class: 'btn', onclick: exportXlsx }, 'Download Excel'));
     }
     app.appendChild(h('div', { class: 'bar' },
       h('div', null, h('h1', null, 'Compare product'),
@@ -641,28 +636,38 @@
           : state.view === 'pdp' ? 'Pick 2 to ' + MAX + ' products. Click any banner to zoom.' : 'Side by side, from the key message down to the formula.')),
       h('div', { class: 'tools' }, tools)));
 
+    function tab(v, label) { return h('button', { type: 'button', 'aria-pressed': String(state.view === v), onclick: function () { state.view = v; state.pick = false; state.setMenu = ''; draw(); } }, label); }
+    app.appendChild(h('div', { class: 'row2' },
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Comparison mode' }, tab('pdp', 'Compare PDP'), tab('full', 'Compare Description'), tab('claim', 'Claim Matrix'))));
+
     if (!products.length) { app.appendChild(Dash.emptyState()); return; }
 
-    function tab(v, label) { return h('button', { type: 'button', 'aria-pressed': String(state.view === v), onclick: function () { state.view = v; state.pick = false; draw(); } }, label); }
-    // one compact left-aligned bar: tabs, then Add product / Save set / Saved sets; chosen-product chips (Claim matrix) right underneath
-    app.appendChild(h('div', { style: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center' },
-      h('div', { class: 'seg', role: 'group', 'aria-label': 'Comparison mode' }, tab('pdp', 'Compare PDP'), tab('full', 'Compare complete description'), tab('claim', 'Claim matrix')),
-      list.length ? addWidget() : null, setsWidgets(list)));
-
-    if (claim && list.length) {
-      app.appendChild(h('div', { class: 'chips', 'aria-label': 'Chosen products' }, list.map(function (p) {
-        return h('span', { class: 'chipx' }, Dash.label(p), h('button', { type: 'button', 'aria-label': 'Remove ' + p.latest.title, onclick: function () { state.sel = state.sel.filter(function (k) { return k !== p.key; }); saveSel(); draw(); } }, '×'));
-      })));
-    }
-
-    if (claim) { app.appendChild(claimView(list)); }
-    else if (!list.length) {
+    if (claim) {
+      // Chosen products card: + Add product first, then the chosen products, Save set / Saved sets on the right
+      app.appendChild(h('section', { class: 'card panel pickcard' },
+        h('div', { class: 'ph' }, h('h2', null, 'Chosen products'), h('span', { class: 'small' }, 'Pick 2 to ' + MAX + ' products.')),
+        h('div', { class: 'pickrow' }, addWidget('btn dashed'),
+          list.map(function (p) {
+            return h('span', { class: 'chipx' }, Dash.label(p), h('button', { type: 'button', 'aria-label': 'Remove ' + p.latest.title, onclick: function () { state.sel = state.sel.filter(function (k) { return k !== p.key; }); saveSel(); draw(); } }, '×'));
+          }),
+          h('span', { class: 'pickend' }, setsWidgets(list)))));
+      app.appendChild(claimView(list));
+    } else if (!list.length) {
       app.appendChild(h('section', { class: 'emptybox' },
-        h('div', { class: 't' }, 'Nothing to compare yet'),
-        h('div', { class: 'd' }, 'Pick 2 to ' + MAX + ' saved products, or load a saved set. They will line up here so you can compare banners, claims and formulas.'),
-        addWidget()));
+        h('div', { class: 't' }, 'No products chosen yet'),
+        h('div', { class: 'd' }, 'Click + Add product at the top and tick 2 to ' + MAX + ' products. Each product appears here as soon as you tick it. You can also tick products in the Product library and click Compare selected.')));
     } else {
-      if (state.view === 'pdp') { var db = detectBar(list); if (db) app.appendChild(db); }
+      if (state.view === 'pdp') {
+        app.appendChild(h('div', { class: 'pdptools' },
+          h('label', { class: 'zoomrow' }, h('span', { class: 'eyebrow' }, 'Filter slides'),
+            h('select', { class: 'select', 'aria-label': 'Filter slides', onchange: function (e) { state.slideFilter = e.target.value; state.det.err = ''; draw(); } },
+              SLIDE_FILTERS.map(function (f) { return h('option', { value: f[0], selected: state.slideFilter === f[0] ? true : null }, f[1]); }))),
+          h('div', { class: 'zoomrow' }, h('span', { class: 'eyebrow' }, 'Slide size'),
+            h('div', { class: 'seg sm', role: 'group', 'aria-label': 'Slide size' }, ['S', 'M', 'L'].map(function (z) {
+              return h('button', { type: 'button', 'aria-pressed': String(state.zoom === z), onclick: function () { state.zoom = z; draw(); } }, z);
+            })))));
+        var db = detectBar(list); if (db) app.appendChild(db);
+      }
       app.appendChild(state.view === 'pdp' ? pdpView(list) : fullView(list));
     }
     app.appendChild(h('div', { class: 'msg' }, 'Your chosen products stay selected when you switch between the tabs. Click a product name to open its detail. "Not read yet" means the AI reading was not run for that product; "Not found" means the AI did not find it. Check the AI wording against the banner before you rely on it. Pictures after the gallery slides are labelled Desc n (from the description).'));

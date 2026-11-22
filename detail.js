@@ -201,13 +201,15 @@
          delBtn];
 
     var fact = function (k, v, small) { return h('div', null, h('div', { class: 'k' }, k), h('b', { class: small ? 's' : null }, v)); };
-    app.appendChild(h('section', { class: 'card dhead' },
+    // 0.17.0: the header sits on the plum band; the facts are white cards right under it
+    app.appendChild(h('section', { class: 'dhead' },
       h('div', { class: 'cov', role: 'img', 'aria-label': 'Slide 1 (cover) of ' + r.title, style: r.images && r.images[0] ? 'background-image:' + Dash.cssUrl(r.images[0]) : '' }),
       h('div', { class: 'body' },
         h('div', { class: 'chips' }, h('span', { class: 'eyebrow' }, r.brand || 'Brand not found'), product.isNew ? Dash.newBadge() : null,
           product.isNew ? h('span', { class: 'small' }, 'badge ends ' + PDP.fmtDate(new Date(new Date(r.newLaunchMarkedAt).getTime() + Dash.NEW_DAYS * 86400000).toISOString())) : null),
-        h('h1', null, r.title),
-        h('div', { class: 'facts' },
+        h('h1', null, r.title)),
+      h('div', { class: 'dacts' }, acts)));
+    app.appendChild(h('div', { class: 'factcards' },
           h('div', null, h('div', { class: 'k' }, 'Main category'),
             editing
               ? h('select', { class: 'select', id: 'e-main', 'aria-label': 'Main category', style: 'height:26px', onchange: function (e) { d.main = e.target.value; } },
@@ -218,8 +220,7 @@
           fact('Price', pp.total),
           fact('Per ml/g', pp.ppu),
           fact('Shop', r.shopName ? r.shopName + (r.isOfficial ? ' · official' : '') : '—', true),
-          fact('Saved', PDP.fmtDate(r.capturedAt) + (r.savedBy ? ' by ' + r.savedBy : ''), true))),
-      h('div', { class: 'dacts' }, acts)));
+          fact('Saved', PDP.fmtDate(r.capturedAt) + (r.savedBy ? ' by ' + r.savedBy : ''), true)));
 
     // banner gallery
     app.appendChild(h('section', { class: 'card gal' },
