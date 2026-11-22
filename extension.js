@@ -1,12 +1,13 @@
-/* Civil War – Settings page: download the extension, install it, get a Gemini key, update it.
- * The file civil-war-extension.zip and extension-info.json sit next to this page on the website
- * (build_flat.sh writes the info file from the extension's manifest). */
+/* Civil War – Guide page: download the extension, install it, get a Gemini key, update it.
+ * The file civil-war-extension-v<REL>.zip and extension-info.json sit next to this page on the website
+ * (build_flat.sh writes the info file from the extension's manifest and checks that REL matches it). */
 (function () {
   'use strict';
   var h = Dash.h;
   Dash.nav('settings');
   var app = document.getElementById('app');
-  var ZIP = 'civil-war-extension.zip', ADDRESS = 'chrome://extensions';
+  var REL = '1.0.0';                                   // keep equal to manifest.json "version" (build_flat.sh checks it)
+  var FOLDER = 'civil-war-extension-v' + REL, ZIP = FOLDER + '.zip', ADDRESS = 'chrome://extensions';
   var info = null;                       // {version, size, date} of the zip on this website
 
   function step(n, title, kids, last) {
@@ -60,7 +61,7 @@
   var updBody = h('div', { class: 'upd', hidden: true },
     h('ol', null,
       h('li', null, 'Download the new zip above and unzip it.'),
-      h('li', null, 'Copy the new files ', h('b', null, 'into the same folder'), ' as before and replace the old ones. Do not use a new folder.'),
+      h('li', null, 'Open the new folder (', h('b', null, FOLDER), '), select ', h('b', null, 'everything inside it'), ', and copy it ', h('b', null, 'into the folder you installed from the first time'), ', replacing the old files. That folder keeps its old name and version number; that is fine. Do not load the new folder as a second extension.'),
       h('li', null, 'Open ', h('b', null, ADDRESS), ' and click the round ', h('b', null, 'refresh'), ' arrow on the Civil War card.'),
       h('li', null, 'Refresh this website (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows).')),
     note('Installed it before from a folder called “pdp-capture” (version 0.15 or older)? Do this just once: on the Civil War card on ' + ADDRESS + ' click Remove, then follow steps 2 and 4 above with the new zip. Your library is safe because it lives in the shared database. You will need to paste your Gemini key again.'));
@@ -84,12 +85,12 @@
       downloadLink)
   ]));
   app.appendChild(step(2, 'Unzip it into a folder that stays in place', [
-    h('p', { class: 'lead' }, 'Create a folder such as ', h('b', null, 'Documents › Civil War'), ', put the zip file in it and unzip it there. You will get a folder called ', h('b', null, 'civil-war-extension'), '.'),
+    h('p', { class: 'lead' }, 'Create a folder such as ', h('b', null, 'Documents › Civil War'), ', put the zip file in it and unzip it there. You will get a folder called ', h('b', null, FOLDER), '.'),
     h('ul', null,
       h('li', null, h('b', null, 'Windows:'), ' right-click the zip file › ', h('b', null, 'Extract All'), '.'),
       h('li', null, h('b', null, 'Mac:'), ' double-click the zip file.')),
     note('Do not move or delete the folder later. Chrome runs the extension from it.', 'plum'),
-    note('If you see a second folder called “civil-war-extension 2”, you unzipped twice. Delete the extra one and keep the first.')
+    note('If you see a second folder called “' + FOLDER + ' 2”, you unzipped twice. Delete the extra one and keep the first.')
   ]));
   app.appendChild(step(3, 'Open Chrome’s extensions page', [
     h('p', { class: 'lead' }, 'Copy the address, open a new tab, paste it in the address bar and press Enter.'),
@@ -99,7 +100,7 @@
     h('ol', null,
       h('li', null, 'Turn on ', h('b', null, 'Developer mode'), ' (switch at the top right of that page).'),
       h('li', null, 'Click ', h('b', null, 'Load unpacked'), '.'),
-      h('li', null, 'Choose the folder ', h('b', null, 'civil-war-extension'), ' (the one with many files inside, not an empty folder).'),
+      h('li', null, 'Choose the folder ', h('b', null, FOLDER), ' (the one with many files inside, not an empty folder).'),
       h('li', null, 'Click the puzzle icon in Chrome’s toolbar and ', h('b', null, 'pin'), ' Civil War, so its icon is always visible.'))
   ]));
   app.appendChild(step(5, 'Get your own Gemini API key (for the AI buttons)', [

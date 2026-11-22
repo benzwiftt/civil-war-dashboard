@@ -587,3 +587,7 @@ body.compact table.cm td,body.compact table.cm th{padding-top:6px;padding-bottom
 .tbl .tr>.lab{box-shadow:none}
 /* Saved sets / Save set pop-ups open under their own button, aligned to its right edge */
 .pop.pop-s{left:auto;right:0}
+
+/* ---- 1.0.0: the menu stays at the top while scrolling ---- */
+nav.top{position:sticky;top:0;z-index:40;transition:background-color .15s,box-shadow .15s}
+nav.top.stuck{background-color:#4E1A48;background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1.2px),linear-gradient(90deg,#6E2350 0%,#4E1A48 60%,#3C1A52 100%);background-size:18px 18px,100% 100%;box-shadow:0 4px 16px rgba(35,15,40,.25)}

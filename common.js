@@ -75,7 +75,7 @@
   };
 
   D.nav = function (active) {
-    var items = [['home.html', 'Main page', 'home'], ['library.html', 'Product library', 'library'], ['compare.html', 'Compare product', 'compare'], ['extension.html', 'Settings', 'settings']];
+    var items = [['home.html', 'Main page', 'home'], ['library.html', 'Product library', 'library'], ['compare.html', 'Compare product', 'compare'], ['extension.html', 'Guide', 'settings']];
     var el = document.getElementById('nav');
     el.className = 'top';
     el.setAttribute('aria-label', 'Main menu');
@@ -95,6 +95,9 @@
       h('a', { class: 'brand', href: 'home.html', 'aria-label': 'Civil War – Main page' }, h('i', { 'aria-hidden': 'true' }), 'Civil War'),
       h('div', { class: 'links' }, items.map(function (it) { return h('a', { href: it[0], 'aria-current': it[2] === active ? 'page' : null }, it[1]); })),
       h('div', { class: 'textsize' }, h('span', null, 'Text'), seg)));
+    // the menu stays at the top while scrolling; it gets its own plum background once the page moves under it
+    var stuck = function () { el.classList.toggle('stuck', window.scrollY > 4); };
+    window.addEventListener('scroll', stuck, { passive: true }); stuck();
     D.watchHero();
   };
 
@@ -116,7 +119,7 @@
       marks.push(first);                                                  // Product detail: Back link + product header
       if (first.nextElementSibling && first.nextElementSibling.classList.contains('dhead')) marks.push(first.nextElementSibling);
     } else if (first && first.tagName === 'HEADER') {
-      marks.push(first);                                                  // Settings: title + extension status
+      marks.push(first);                                                  // Guide: title + extension status
       if (first.nextElementSibling && first.nextElementSibling.classList.contains('statusbar')) marks.push(first.nextElementSibling);
     }
     Array.prototype.forEach.call(app.querySelectorAll(':scope > .onhero'), function (el) { if (marks.indexOf(el) < 0) el.classList.remove('onhero'); });
