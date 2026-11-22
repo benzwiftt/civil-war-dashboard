@@ -6,5 +6,7 @@
 self.CW_CONFIG = {
   supabaseUrl: 'https://xbxkzuezrazfmeijafyk.supabase.co',
   supabaseKey: 'sb_publishable_3VAbPSYMD5QtFEUaZNkrjA_buIE4B7L',
-  useCloud: true
+  useCloud: true,
+  // the live website; the side panel buttons open it while useCloud is true (with useCloud false they open the pages inside the extension again)
+  siteUrl: 'https://benzwiftt.github.io/civil-war-dashboard/'
 };

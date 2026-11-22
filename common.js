@@ -75,7 +75,7 @@
   };
 
   D.nav = function (active) {
-    var items = [['home.html', 'Main page', 'home'], ['library.html', 'Product library', 'library'], ['compare.html', 'Compare product', 'compare']];
+    var items = [['home.html', 'Main page', 'home'], ['library.html', 'Product library', 'library'], ['compare.html', 'Compare product', 'compare'], ['extension.html', 'Settings', 'settings']];
     var el = document.getElementById('nav');
     el.className = 'top';
     el.setAttribute('aria-label', 'Main menu');
@@ -368,6 +368,20 @@
     }
     var d = await bridgeCall({ msg: msg }, 240000);      // the AI can take a while
     return d ? d.res : { ok: false, error: 'The extension did not answer in time. Try again.' };
+  };
+  // Is the Civil War extension in this browser, and which version? -> {installed, version ('' when unknown)}
+  D.extensionInfo = async function () {
+    if (inExt) { var v = ''; try { v = chrome.runtime.getManifest().version; } catch (e) {} return { installed: true, version: v, inside: true }; }
+    var pong = await bridgeCall({ kind: 'ping' }, 1500);
+    if (!pong || !pong.pong) return { installed: false, version: '' };
+    return { installed: true, version: pong.version || '' };
+  };
+  // 'a' older than 'b'? ('0.15.0' < '0.16.0'); an unknown version counts as older
+  D.versionOlder = function (a, b) {
+    if (!a) return true;
+    var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+    for (var i = 0; i < 3; i++) { var p = x[i] || 0, q = y[i] || 0; if (p !== q) return p < q; }
+    return false;
   };
   D.openTab = function (url) {
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) chrome.tabs.create({ url: url });
