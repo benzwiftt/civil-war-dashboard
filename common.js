@@ -342,9 +342,32 @@
   // things that only exist inside the extension: AI calls (run by the extension) and opening a tab
   var inExt = typeof chrome !== 'undefined' && !!(chrome.runtime && chrome.runtime.sendMessage);
   D.inExtension = inExt;
-  D.ask = function (msg) {
+  // On the website the request goes through the Civil War extension installed in the same browser (src/bridge.js),
+  // which uses the Gemini key saved in the extension. No key is ever typed or stored on the website.
+  var bridgeSeen = false, bridgeSeq = 0;
+  var NO_EXT = 'To use this AI button on the website, the Civil War extension (version 0.14 or newer) must be installed in this same Chrome, with your Gemini key saved in it. Install or update it, refresh this page and try again. Everything already analysed stays visible without it.';
+  function bridgeCall(payload, waitMs) {
+    return new Promise(function (resolve) {
+      var id = 'cw' + Date.now() + '_' + (++bridgeSeq), timer;
+      function onMsg(e) {
+        var d = e.data;
+        if (e.source !== window || e.origin !== location.origin || !d || d.cwBridge !== 'res' || d.id !== id) return;
+        clearTimeout(timer); window.removeEventListener('message', onMsg); resolve(d);
+      }
+      window.addEventListener('message', onMsg);
+      timer = setTimeout(function () { window.removeEventListener('message', onMsg); resolve(null); }, waitMs);
+      payload.cwBridge = 'req'; payload.id = id; window.postMessage(payload, location.origin);
+    });
+  }
+  D.ask = async function (msg) {
     if (inExt) return chrome.runtime.sendMessage(msg);
-    return Promise.resolve({ ok: false, error: 'This AI button works only inside the Civil War Chrome extension for now. Open the Product library from the extension to use it.' });
+    if (!bridgeSeen) {
+      var pong = await bridgeCall({ kind: 'ping' }, 1500);
+      if (!pong || !pong.pong) return { ok: false, error: NO_EXT };
+      bridgeSeen = true;
+    }
+    var d = await bridgeCall({ msg: msg }, 240000);      // the AI can take a while
+    return d ? d.res : { ok: false, error: 'The extension did not answer in time. Try again.' };
   };
   D.openTab = function (url) {
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) chrome.tabs.create({ url: url });
