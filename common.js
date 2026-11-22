@@ -79,9 +79,22 @@
     var el = document.getElementById('nav');
     el.className = 'top';
     el.setAttribute('aria-label', 'Main menu');
+    // Text size: Compact (default, fits more on one screen) or Normal. Kept in this browser.
+    var size = 'compact';
+    try { size = localStorage.getItem('cw_text') === 'normal' ? 'normal' : 'compact'; } catch (e) { /* ignore */ }
+    document.body.classList.toggle('compact', size === 'compact');
+    var seg = h('div', { class: 'seg sm', role: 'group', 'aria-label': 'Text size' }, [['compact', 'Compact'], ['normal', 'Normal']].map(function (o) {
+      return h('button', { type: 'button', 'aria-pressed': String(size === o[0]), onclick: function () {
+        size = o[0]; try { localStorage.setItem('cw_text', size); } catch (e) { /* ignore */ }
+        document.body.classList.toggle('compact', size === 'compact');
+        Array.prototype.forEach.call(seg.children, function (b, i) { b.setAttribute('aria-pressed', String(['compact', 'normal'][i] === size)); });
+        D.fitHero();
+      } }, o[1]);
+    }));
     el.appendChild(h('div', { class: 'in' },
-      h('div', { class: 'brand' }, h('i'), 'Civil War'),
-      h('div', { class: 'links' }, items.map(function (it) { return h('a', { href: it[0], 'aria-current': it[2] === active ? 'page' : null }, it[1]); }))));
+      h('a', { class: 'brand', href: 'home.html', 'aria-label': 'Civil War – Main page' }, h('i', { 'aria-hidden': 'true' }), 'Civil War'),
+      h('div', { class: 'links' }, items.map(function (it) { return h('a', { href: it[0], 'aria-current': it[2] === active ? 'page' : null }, it[1]); })),
+      h('div', { class: 'textsize' }, h('span', null, 'Text'), seg)));
     D.watchHero();
   };
 

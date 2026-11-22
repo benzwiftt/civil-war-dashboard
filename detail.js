@@ -205,21 +205,28 @@
     app.appendChild(h('section', { class: 'dhead' },
       h('div', { class: 'cov', role: 'img', 'aria-label': 'Slide 1 (cover) of ' + r.title, style: r.images && r.images[0] ? 'background-image:' + Dash.cssUrl(r.images[0]) : '' }),
       h('div', { class: 'body' },
-        h('div', { class: 'chips' }, h('span', { class: 'eyebrow' }, r.brand || 'Brand not found'), product.isNew ? Dash.newBadge() : null,
+        h('div', { class: 'chips' }, h('span', { class: 'brandname' }, r.brand || 'Brand not found'), product.isNew ? Dash.newBadge() : null,
           product.isNew ? h('span', { class: 'small' }, 'badge ends ' + PDP.fmtDate(new Date(new Date(r.newLaunchMarkedAt).getTime() + Dash.NEW_DAYS * 86400000).toISOString())) : null),
-        h('h1', null, r.title)),
+        h('h1', null, r.title),
+        // Main category › Sub-category, right under the product name (editable here in Edit mode)
+        editing
+          ? h('div', { class: 'crumbs edit' },
+              h('select', { class: 'select', id: 'e-main', 'aria-label': 'Main category', onchange: function (e) { d.main = e.target.value; } },
+                [['', 'Main category not set'], ['Skincare', 'Skincare'], ['Decorative', 'Decorative'], ['Personal Care', 'Personal Care']].map(function (o) { return h('option', { value: o[0], selected: d.main === o[0] ? true : null }, o[1]); })),
+              h('span', { class: 'sep', 'aria-hidden': 'true' }, '›'), catCombo(d))
+          : h('nav', { class: 'crumbs', 'aria-label': 'Category' },
+              h('a', { class: 'crumb', href: 'library.html' }, product.main || 'Main category not set'),
+              h('span', { class: 'sep', 'aria-hidden': 'true' }, '›'),
+              h('a', { class: 'crumb on', href: 'library.html#cat=' + encodeURIComponent(product.category) }, product.category))),
       h('div', { class: 'dacts' }, acts)));
+    var shopUrl = r.shopId ? 'https://shopee.co.id/shop/' + encodeURIComponent(r.shopId) : '';
     app.appendChild(h('div', { class: 'factcards' },
-          h('div', null, h('div', { class: 'k' }, 'Main category'),
-            editing
-              ? h('select', { class: 'select', id: 'e-main', 'aria-label': 'Main category', style: 'height:26px', onchange: function (e) { d.main = e.target.value; } },
-                  [['', 'Not set'], ['Skincare', 'Skincare'], ['Decorative', 'Decorative'], ['Personal Care', 'Personal Care']].map(function (o) { return h('option', { value: o[0], selected: d.main === o[0] ? true : null }, o[1]); }))
-              : (product.main ? h('span', { class: 'badge' }, product.main) : h('b', { class: 's' }, '—'))),
-          h('div', null, h('div', { class: 'k' }, 'Category'), editing ? catCombo(d) : h('span', { class: 'badge' }, product.category)),
           fact('Netto', r.netto ? r.netto.text : '—'),
           fact('Price', pp.total),
           fact('Per ml/g', pp.ppu),
-          fact('Shop', r.shopName ? r.shopName + (r.isOfficial ? ' · official' : '') : '—', true),
+          h('div', null, h('div', { class: 'k' }, 'Shop'),
+            r.shopName && shopUrl ? h('a', { class: 'shoplink', href: shopUrl, target: '_blank', rel: 'noopener', title: 'Open this shop on Shopee' }, r.shopName + ' ↗') : h('b', { class: 's' }, r.shopName || '—'),
+            h('div', { class: 'small' }, 'Shopee' + (r.isOfficial ? ' · official store' : ''))),
           fact('Saved', PDP.fmtDate(r.capturedAt) + (r.savedBy ? ' by ' + r.savedBy : ''), true)));
 
     // banner gallery
@@ -239,7 +246,7 @@
         ? (function () { var t = h('textarea', { class: 'f', rows: 2, 'aria-label': 'Single key message', style: 'font-weight:600' }); t.value = d.skm; t.addEventListener('input', function () { d.skm = t.value; }); return t; })()
         : (r.keyMessage ? h('p', { class: 'skm' }, r.keyMessage) : none(ai ? 'Not found' : NOT_READ)));
 
-    var pdesc = h('section', { class: 'card sec' }, head('Product description', true),
+    var pdesc = h('section', { class: 'card sec desc' }, head('Product description', true),
       editing
         ? (function () { var t = h('textarea', { class: 'f', rows: 5, 'aria-label': 'Product description' }); t.value = d.pdesc; t.addEventListener('input', function () { d.pdesc = t.value; }); return t; })()
         : (r.productDescription ? h('p', { style: 'margin:0;line-height:1.6;white-space:pre-line' }, r.productDescription) : none(ai ? NO_PDESC : NOT_READ)));

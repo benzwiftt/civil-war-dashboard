@@ -538,3 +538,52 @@ details.raw{border-radius:22px}
 .statusbar.onhero .muted1{color:var(--hero-ink)}
 .btn.primary.big{height:42px;padding:0 20px;font-size:13.5px;border-radius:999px;background:linear-gradient(135deg,#8A2E5C,#6B3FC4);border:0;box-shadow:0 6px 16px rgba(107,63,196,.28)}
 .btn.primary.big:hover{background:linear-gradient(135deg,#5E1D3F,#5B3BB0)}
+
+/* ---- 0.17.1 ---- */
+/* full width at any zoom: cards stretch across the window with 24px side margins (Settings keeps its reading width) */
+.wrap{max-width:none;padding-left:24px;padding-right:24px}
+nav.top .in{max-width:none}
+/* brand: new bag logo on a white tile; the name never gets cut */
+nav.top .brand{flex-shrink:0;white-space:nowrap;text-decoration:none;color:#fff;gap:9px}
+nav.top .brand:hover{background:none;color:#fff}
+nav.top .brand i{width:26px;height:26px;border-radius:8px;background:#fff url(icon128.png) center/20px 20px no-repeat;flex:0 0 26px}
+/* Text: Compact | Normal (menu, right side) */
+nav.top .textsize{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--hero-ink);font-size:11px;font-weight:700}
+nav.top .textsize .seg{background:rgba(255,255,255,.14);border-radius:999px;padding:2px}
+nav.top .textsize .seg button{color:#fff;border-radius:999px;height:22px;padding:0 10px;font-size:11px}
+nav.top .textsize .seg [aria-pressed=true]{background:#fff;color:var(--accent-dark)}
+body.compact{font-size:12px}
+body.compact .wrap{gap:10px}
+body.compact .onhero h1,body.compact .dhead.onhero h1{font-size:21px}
+body.compact .panel{padding:12px 16px}
+body.compact .sec{padding:10px 14px}
+body.compact .libcard{padding:12px 16px;gap:10px}
+body.compact .lrow{padding:3px 12px}
+body.compact .tr>.c{padding:6px 8px}
+body.compact .tr>.lab{padding:6px 8px 6px 12px}
+body.compact .kpis .k{padding:10px 16px}
+body.compact .kpis .n{font-size:19px}
+body.compact .factcards>div{padding:10px 14px}
+body.compact .factcards b{font-size:14px}
+body.compact table.cm td,body.compact table.cm th{padding-top:6px;padding-bottom:6px}
+
+/* Product detail header: bigger brand, Main category › Sub-category under the name, shop name as a link */
+.dhead .brandname{font-size:16px;font-weight:800;letter-spacing:.06em;color:var(--ink)}
+.dhead.onhero .brandname{color:#fff}
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.crumbs .crumb{height:24px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:700;font-size:11.5px;display:inline-flex;align-items:center;text-decoration:none}
+.crumbs .crumb.on{background:#fff;border-color:#fff;color:var(--accent-dark)}
+.crumbs .sep{color:var(--hero-ink)}
+.crumbs.edit .select{height:30px;border-radius:999px}
+.crumbs.edit .combo{min-width:220px}
+.onhero .combo .clist,.onhero .combo .clist *{color:var(--ink)}
+.factcards a.shoplink{display:inline-block;font-weight:800;color:var(--accent);text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+/* Product description: a thin line between the title and the text */
+.sec.desc>.hd{border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:10px}
+
+/* Compare Description table: lines as clear as the Product library lines */
+.tbl .tr{border-top:1px solid var(--rule)}
+.tbl .tr>.c{border-left:1px solid var(--rule)}
+.tbl .tr>.lab{box-shadow:none}
+/* Saved sets / Save set pop-ups open under their own button, aligned to its right edge */
+.pop.pop-s{left:auto;right:0}

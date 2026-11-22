@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Civil War</title>
+  <path d="M45 50 V42 a19 19 0 0 1 38 0 V50" fill="none" stroke="#6E2350" stroke-width="9" stroke-linecap="round"/>
+  <path d="M33 46 H95 Q106 46 107.5 57 L114 99 Q116 116 100 116 H28 Q12 116 14 99 L20.5 57 Q22 46 33 46 Z" fill="#6E2350"/>
+  <path d="M65 116 C53 106 54 92 66 82 C78 72 92 66 108 60 L114 99 Q116 116 100 116 Z" fill="#E8A68C"/>
+  <path d="M65 46 C80 55 81 71 66 82 C53 92 52 107 65 116" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+</svg>

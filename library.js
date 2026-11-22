@@ -137,12 +137,15 @@
         h('button', { type: 'button', class: 'btn primary', disabled: picked.length >= 2 ? null : true, title: picked.length >= 2 ? '' : 'Tick 2 or more products first', onclick: goCompare }, 'Compare selected →'))));
 
     var inMain = products.filter(function (p) { return Dash.inMain(p, state.main); });
-    var cats = Dash.categories(inMain);
     var newCount = inMain.filter(function (p) { return p.isNew; }).length;
-    var pillData = [{ name: 'All', label: 'All (' + inMain.length + ')' }];
-    if (newCount) pillData.push({ name: 'New Launch', label: 'New Launch (' + newCount + ')' });
-    cats.forEach(function (c) { pillData.push({ name: c.name, label: c.name + ' (' + c.count + ')' }); });
-    app.appendChild(h('div', { class: 'row2' }, Dash.mainTabs(products, state.main, function (t) { state.main = t; Dash.setMain(t); state.cat = 'All'; draw(); })));
+    // top tabs: All | New Launch | Skincare | Decorative | Personal Care (the sub-category pill row was removed in 0.17.1; Group by covers it)
+    var tabs = Dash.mainTabs(products, state.main, function (t) { state.main = t; Dash.setMain(t); state.cat = 'All'; draw(); });
+    if (newCount || state.cat === 'New Launch') {
+      var nl = h('button', { type: 'button', 'aria-pressed': String(state.cat === 'New Launch'), onclick: function () { state.cat = state.cat === 'New Launch' ? 'All' : 'New Launch'; draw(); } }, 'New Launch', h('b', null, String(newCount)));
+      tabs.insertBefore(nl, tabs.children[1] || null);
+      if (state.cat === 'New Launch') Array.prototype.forEach.call(tabs.children, function (b) { if (b !== nl) b.setAttribute('aria-pressed', 'false'); });
+    }
+    app.appendChild(h('div', { class: 'row2' }, tabs));
 
     if (!products.length) { app.appendChild(Dash.emptyState()); drawBar(); return; }
     var card = h('section', { class: 'card libcard' },
@@ -150,10 +153,10 @@
       h('div', { class: 'libtools' }, search,
         h('label', { class: 'eyebrow', for: 'lib-sort' }, 'Sort'), sort,
         h('label', { class: 'eyebrow', for: 'lib-group' }, 'Group by'), group,
-        h('span', { class: 'small cnt' }, 'Showing ' + Dash.pluralize(ordered.length, 'product', 'products'))),
-      h('div', { class: 'pills', role: 'group', 'aria-label': 'Filter by category' }, pillData.map(function (c) {
-        return h('button', { type: 'button', class: 'pill', 'aria-pressed': String(state.cat === c.name), onclick: function () { state.cat = c.name; draw(); } }, c.label);
-      })));
+        state.cat !== 'All' && state.cat !== 'New Launch'
+          ? h('span', { class: 'chipx' }, 'Sub-category: ' + state.cat, h('button', { type: 'button', 'aria-label': 'Show all sub-categories', onclick: function () { state.cat = 'All'; history.replaceState(null, '', location.pathname); draw(); } }, '×'))
+          : null,
+        h('span', { class: 'small cnt' }, 'Showing ' + Dash.pluralize(ordered.length, 'product', 'products'))));
     if (!ordered.length) card.appendChild(h('div', { class: 'empty' }, h('div', { class: 't' }, 'No products match'), h('div', { class: 'd' }, 'Try another category or clear the search.')));
     else grouped(ordered).forEach(function (g) {
       if (g.label) card.appendChild(h('div', { class: 'lgroup' }, h('h3', null, g.label), h('span', { class: 'cnt' }, String(g.items.length))));

@@ -624,6 +624,7 @@
     if (!claim && products.length) {
       tools.push(addWidget(), setsWidgets(list));
       if (list.length) {
+        tools.push(h('button', { type: 'button', class: 'btn', title: 'Remove all chosen products', onclick: function () { state.sel = []; state.pick = false; state.setMenu = ''; saveSel(); draw(); } }, 'Clear all'));
         tools.push(h('span', { class: 'tsep', 'aria-hidden': 'true' }));
         tools.push(h('button', { type: 'button', class: 'btn', onclick: copyTable }, 'Copy table'));
         tools.push(h('button', { type: 'button', class: 'btn', onclick: exportXlsx }, 'Download Excel'));
@@ -650,7 +651,7 @@
           list.map(function (p) {
             return h('span', { class: 'chipx' }, Dash.label(p), h('button', { type: 'button', 'aria-label': 'Remove ' + p.latest.title, onclick: function () { state.sel = state.sel.filter(function (k) { return k !== p.key; }); saveSel(); draw(); } }, '×'));
           }),
-          h('span', { class: 'pickend' }, setsWidgets(list)))));
+          h('span', { class: 'pickend' }, setsWidgets(list), list.length ? h('button', { type: 'button', class: 'btn', onclick: function () { state.sel = []; state.pick = false; state.setMenu = ''; saveSel(); draw(); } }, 'Clear all') : null))));
       app.appendChild(claimView(list));
     } else if (!list.length) {
       app.appendChild(h('section', { class: 'emptybox' },
