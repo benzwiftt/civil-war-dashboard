@@ -21,6 +21,7 @@
   function makeDraft(p) {
     var r = p.latest, ai = aiOf(r) || {};
     return {
+      title: r.title || '', brand: r.brand || '',
       skm: r.keyMessage || '',
       pdesc: r.productDescription || '',
       main: p.main || '',
@@ -28,7 +29,8 @@
       claims: Dash.items(ai.heroClaims), rtb: Dash.items(ai.rtb), ing: Dash.items(ai.keyIngredients), how: Dash.items(ai.howToUse),
       texture: ai.texture || '', finish: ai.finish || '', skin: ai.targetSkin || '',
       shades: (r.variants || []).slice(),
-      notes: p.notes || ''
+      notes: p.notes || '',
+      removed: {}          // picture ids (PDP.imgKey) of banner slides marked for removal; applied on Save changes
     };
   }
 
@@ -42,9 +44,14 @@
     draft.shades.forEach(function (s) { s = String(s).trim(); if (s && shades.indexOf(s) < 0) shades.push(s); });
     var fields = { heroClaims: clean(draft.claims), rtb: clean(draft.rtb), keyIngredients: clean(draft.ing), howToUse: clean(draft.how),
       texture: draft.texture.trim(), finish: draft.finish.trim(), targetSkin: draft.skin.trim() };
+    var removedNow = draft.removed || {};
     var anyAi = fields.heroClaims.length || fields.rtb.length || fields.keyIngredients.length || fields.howToUse.length || fields.texture || fields.finish || fields.targetSkin;
     try {
       await Dash.updateLatest(key, function (rec) {
+        // Product name and Brand (website edit, 1.0.1). An empty box keeps the old value; the full Shopee title (pageTitle) is untouched.
+        var nt = String(draft.title || '').replace(/\s+/g, ' ').trim(), nb = String(draft.brand || '').replace(/\s+/g, ' ').trim();
+        if (nt) rec.title = nt;
+        if (nb) rec.brand = nb;
         rec.keyMessage = draft.skm.trim();
         rec.productDescription = draft.pdesc.replace(/[ \t]+/g, ' ').trim();
         rec.variants = shades;
@@ -52,6 +59,13 @@
         var cat = String(draft.cat || '').replace(/\s+/g, ' ').trim();
         if (cat) { var same = Object.keys(catCounts).filter(function (c) { return c.toLowerCase() === cat.toLowerCase(); })[0]; rec.category = same || cat; }   // an empty box keeps the old category; "lip serum" reuses the existing "Lip Serum"
         if (rec.ai || anyAi) rec.ai = Object.assign({ audit: [] }, rec.ai || {}, fields);
+        // banner slides removed in Edit (website 1.0.1). Compared by picture id, because the record keeps the Shopee
+        // addresses while the page shows the Storage copies. slideTypes and imageCopy stay as they are (keyed by picture id).
+        if (Object.keys(removedNow).length) {
+          var keep = function (u) { return !removedNow[PDP.imgKey(u)]; };
+          rec.images = (rec.images || []).filter(keep);
+          if (rec.descImages) rec.descImages = rec.descImages.filter(keep);
+        }
       }, draft.notes);
       editing = false; draft = null;
       Dash.toast('Changes saved.');
@@ -168,6 +182,41 @@
   }
 
   // ---------- the page ----------
+  function editGallery(slides, r, d) {
+    var count = h('span', { class: 'small', 'aria-live': 'polite' });
+    function kept() { return slides.filter(function (s) { return !d.removed[PDP.imgKey(s.url)]; }).length; }
+    function paintCount() { count.textContent = kept() + ' of ' + slides.length + ' slides kept'; }
+    var tiles = slides.map(function (s, i) {
+      var id = PDP.imgKey(s.url);
+      var tile = h('div', { class: 'gtile' });
+      var x = h('button', { type: 'button', class: 'gx', 'aria-label': 'Remove ' + s.label, title: 'Remove this slide' }, '×');
+      var undo = h('button', { type: 'button', class: 'gundo' }, 'Undo');
+      var zoom = h('button', { type: 'button', 'aria-label': 'Zoom ' + s.label, onclick: function () { Dash.lightbox(slides, i, r.brand || ''); } },
+        Dash.img(s.url, s.label + ' of ' + r.title));
+      function paint() {
+        var off = !!d.removed[id];
+        tile.classList.toggle('off', off);
+        undo.setAttribute('aria-label', 'Undo removing ' + s.label);
+        paintCount();
+      }
+      x.addEventListener('click', function () { d.removed[id] = 1; paint(); undo.focus(); });
+      undo.addEventListener('click', function () { delete d.removed[id]; paint(); x.focus(); });
+      tile.appendChild(zoom); tile.appendChild(x);
+      tile.appendChild(h('div', { class: 'gmark' }, h('span', null, 'Will be removed'), undo));
+      tile.appendChild(h('span', { class: 'lab' }, s.label));
+      paint();
+      return tile;
+    });
+    paintCount();
+    return h('section', { class: 'card gal editing' },
+      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px' },
+        h('h2', null, 'Banner slides'), count),
+      slides.length
+        ? [h('p', { class: 'small gnote' }, 'Click × on a slide that isn\'t relevant. Nothing is deleted until you press Save changes.'),
+           h('div', { class: 'tr', style: 'border:0' }, tiles)]
+        : none('No banners were saved for this product.'));
+  }
+
   function draw() {
     var app = document.getElementById('app');
     app.textContent = '';
@@ -205,9 +254,16 @@
     app.appendChild(h('section', { class: 'dhead' },
       h('div', { class: 'cov', role: 'img', 'aria-label': 'Slide 1 (cover) of ' + r.title, style: r.images && r.images[0] ? 'background-image:' + Dash.cssUrl(r.images[0]) : '' }),
       h('div', { class: 'body' },
-        h('div', { class: 'chips' }, h('span', { class: 'brandname' }, r.brand || 'Brand not found'), product.isNew ? Dash.newBadge() : null,
+        editing
+          ? h('div', { class: 'dedit' },
+              h('div', null, h('label', { class: 'lbl', for: 'e-brand' }, 'Brand'),
+                h('input', { class: 'input', id: 'e-brand', type: 'text', value: d.brand, oninput: function (e) { d.brand = e.target.value; } })),
+              h('div', null, h('label', { class: 'lbl', for: 'e-title' }, 'Product name'),
+                h('input', { class: 'input', id: 'e-title', type: 'text', value: d.title, oninput: function (e) { d.title = e.target.value; } })))
+          : null,
+        editing ? null : h('div', { class: 'chips' }, h('span', { class: 'brandname' }, r.brand || 'Brand not found'), product.isNew ? Dash.newBadge() : null,
           product.isNew ? h('span', { class: 'small' }, 'badge ends ' + PDP.fmtDate(new Date(new Date(r.newLaunchMarkedAt).getTime() + Dash.NEW_DAYS * 86400000).toISOString())) : null),
-        h('h1', null, r.title),
+        editing ? null : h('h1', null, r.title),
         // Main category › Sub-category, right under the product name (editable here in Edit mode)
         editing
           ? h('div', { class: 'crumbs edit' },
@@ -219,18 +275,22 @@
               h('span', { class: 'sep', 'aria-hidden': 'true' }, '›'),
               h('a', { class: 'crumb on', href: 'library.html#cat=' + encodeURIComponent(product.category) }, product.category))),
       h('div', { class: 'dacts' }, acts)));
-    var shopUrl = r.shopId ? 'https://shopee.co.id/shop/' + encodeURIComponent(r.shopId) : '';
+    // shop name as plain text (no link: "Open on Shopee" already opens the product). Some saves picked up the
+    // shop button's caption ("View Shop", "Kunjungi Toko") instead of the name; those show as "—".
+    var shopName = String(r.shopName || '').replace(/\s+/g, ' ').trim();
+    if (/^(view shop|visit shop|kunjungi toko|lihat toko|shop|toko)$/i.test(shopName)) shopName = '';
     app.appendChild(h('div', { class: 'factcards' },
           fact('Netto', r.netto ? r.netto.text : '—'),
           fact('Price', pp.total),
           fact('Per ml/g', pp.ppu),
           h('div', null, h('div', { class: 'k' }, 'Shop'),
-            r.shopName && shopUrl ? h('a', { class: 'shoplink', href: shopUrl, target: '_blank', rel: 'noopener', title: 'Open this shop on Shopee' }, r.shopName + ' ↗') : h('b', { class: 's' }, r.shopName || '—'),
+            h('b', { class: 's' }, shopName || '—'),
             h('div', { class: 'small' }, 'Shopee' + (r.isOfficial ? ' · official store' : ''))),
           fact('Saved', PDP.fmtDate(r.capturedAt) + (r.savedBy ? ' by ' + r.savedBy : ''), true)));
 
-    // banner gallery
-    app.appendChild(h('section', { class: 'card gal' },
+    // banner gallery (in Edit: × on each slide marks it for removal; nothing changes until Save changes)
+    if (editing) app.appendChild(editGallery(slides, r, d));
+    else app.appendChild(h('section', { class: 'card gal' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px' },
         h('h2', null, 'Banner slides'), h('span', { class: 'small' }, Dash.pluralize(slides.length, 'image', 'images') + ' · click to zoom')),
       slides.length
